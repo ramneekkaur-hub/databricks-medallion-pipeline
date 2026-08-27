@@ -1,59 +1,73 @@
-# AI Prompts — Data Generation
+# Data Generation Notes
 
-## Prompt 1: Initial Sample Data Generator
+## Purpose
 
-**PROMPT SENT:**
+The sample data generator creates realistic e-commerce data for customers, products and orders.
 
-I need to build the sample data generation component for a Databricks Medallion Architecture e-commerce pipeline.
+The generated data is intentionally populated with data-quality issues so that the Silver layer can demonstrate completeness, uniqueness, referential integrity and validation checks.
 
-The assignment requires three CSV files:
-- customers.csv — 10,000 rows
-- products.csv — 500 rows
-- orders.csv — 100,000 rows
+## Generated Datasets
 
-The data should be realistic and reproducible using Python.
+### Customers
 
-Customers should contain:
-customer_id, customer_name, email, country, signup_date, customer_segment, lifetime_value.
+The customer dataset contains:
 
-Products should contain:
-product_id, product_name, category, price, cost, stock_quantity, reorder_level.
+- customer_id
+- customer_name
+- email
+- country
+- signup_date
+- customer_segment
+- lifetime_value
 
-Orders should contain:
-order_id, customer_id, order_date, product_id, quantity, unit_price, total_amount, order_status, payment_date.
+Intentional quality issues include:
 
-The generated data must include the intentional data-quality issues specified in the assignment, including NULLs, duplicate IDs, invalid values and referential-integrity failures.
+- NULL customer email values
+- Duplicate customer IDs
 
-Use a fixed random seed so the dataset is reproducible.
+### Products
 
-Please generate a clean, maintainable Python script using only appropriate standard-library functionality where possible. Include comments explaining the intentional quality issues.
+The product dataset contains:
 
-**AI RESPONSE / APPROACH:**
+- product_id
+- product_name
+- category
+- price
+- cost
+- stock_quantity
+- reorder_level
 
-Cursor generated a Python sample-data generation script using deterministic random generation and helper functions for dates and monetary values.
+### Orders
 
-**WHAT I ACCEPTED:**
+The order dataset contains:
 
-I accepted the overall approach because it produced all three required CSV datasets, used a fixed random seed, generated the required row counts and intentionally introduced data-quality issues.
+- order_id
+- customer_id
+- order_date
+- product_id
+- quantity
+- unit_price
+- total_amount
+- order_status
+- payment_date
 
-**WHAT I VALIDATED:**
+Intentional quality issues include:
 
-I ran the generated script using:
+- NULL customer IDs
+- NULL product IDs
+- Customer IDs that do not exist in the customer dataset
+- Product IDs that do not exist in the product dataset
+- Duplicate order IDs
 
-python3 src/data_generation/generate_sample_data.py
+## Why Quality Issues Are Introduced
 
-The script successfully generated:
-- customers.csv — 10,000 data rows
-- products.csv — 500 data rows
-- orders.csv — 100,000 data rows
+The intentional issues simulate realistic upstream data-quality problems.
 
-I additionally validated the CSV line counts using wc -l.
+The purpose is not to remove the problematic records during generation. Instead, the records are retained so the Bronze layer represents the source data and the Silver layer can identify and flag quality problems.
 
-The resulting counts were:
-- customers.csv — 10,001 lines including the header
-- products.csv — 501 lines including the header
-- orders.csv — 100,001 lines including the header
+## Validation
 
-**FINAL DECISION:**
+The generated files are validated by the automated tests in:
 
-Accepted after local execution and row-count validation.
+```text
+tests/test_data_generation.py
