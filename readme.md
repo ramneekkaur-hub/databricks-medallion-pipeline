@@ -91,7 +91,7 @@ validation cases.
 ## Prerequisites
 
 - Python 3
-- A Databricks Community Edition workspace
+- A Databricks Free Edition or personal development workspace
 - Databricks compute with PySpark and Delta Lake
 - Permission to create managed schemas and tables
 - Source CSV files in a location accessible to Spark
@@ -120,13 +120,96 @@ Run these components in order:
 The numbered Silver Python files and Gold SQL files are supporting modules
 executed by their respective orchestration scripts.
 
-The Bronze reader currently uses relative `data/*.csv` paths. If those paths
-are not directly accessible from Databricks, upload the CSV files to a
-Spark-accessible location and update the Bronze path configuration.
+The Bronze reader resolves the bundled `data/*.csv` files relative to its
+deployed script and uses fully qualified workspace-file URIs.
 
-Detailed Community Edition instructions are available in
+Detailed Free Edition instructions are available in
 `database/setup-notes.md`. Expected schemas and table structures are defined
 in `database/schema.sql`.
+
+## Databricks Asset Bundle Deployment
+
+Legacy Databricks Community Edition was retired in 2025. Databricks Free
+Edition supports bundles and serverless jobs, subject to Free Edition quotas
+and feature limits. The development bundle deploys only the Bronze, Silver,
+and Gold runtime files plus the CSVs required by Bronze. Tests, documentation,
+Cursor workflow files, AI prompts, virtual environments, and Git metadata are
+not deployed.
+
+The bundle requires Databricks CLI `0.218.0` or newer. Check the installed
+version:
+
+```bash
+databricks version
+```
+
+On macOS, install or update the current CLI when needed:
+
+```bash
+brew tap databricks/tap
+brew install databricks
+brew upgrade databricks
+```
+
+Authenticate without storing credentials in this repository:
+
+```bash
+read -r -p "Databricks workspace URL: " DATABRICKS_HOST
+export DATABRICKS_HOST
+databricks auth login --host "$DATABRICKS_HOST" --profile medallion-dev
+export DATABRICKS_CONFIG_PROFILE=medallion-dev
+databricks auth describe --profile medallion-dev
+```
+
+Databricks does not allow bundle-variable interpolation in authentication
+fields such as `workspace.host`. The supported `DATABRICKS_HOST` environment
+variable and CLI profile therefore provide the environment-specific host.
+
+From the repository root, validate and deploy the development target:
+
+```bash
+python3 src/data_generation/generate_sample_data.py
+export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+.venv/bin/python -m pytest tests/ -v
+databricks bundle validate -t dev
+databricks bundle deploy -t dev
+databricks bundle summary -t dev
+```
+
+The data generator remains a local preparation step. Deployment syncs the
+resulting CSVs, and the Databricks job starts with Bronze ingestion. The pytest
+suite also remains local because its Spark tests create a local Spark session
+rather than a Databricks job task. The currently installed local PySpark
+version requires Java 17 for those Spark tests.
+
+Run the deployed Bronze → Silver → Gold job:
+
+```bash
+databricks bundle run -t dev medallion_pipeline
+```
+
+This command waits for completion and reports task status. To open the deployed
+job in the Databricks UI:
+
+```bash
+databricks bundle open -t dev medallion_pipeline
+```
+
+To remove the bundle-managed job and synced workspace files:
+
+```bash
+databricks bundle destroy -t dev
+```
+
+`bundle destroy` prompts before deleting deployed bundle resources. It does not
+drop the Bronze, Silver, or Gold managed tables created by the pipeline.
+
+The bundle uses serverless environment version 2 and does not configure a
+classic cluster, cluster ID, catalog name, token, workspace URL, or personal
+credential. The active workspace's default catalog is used. If serverless
+Python job tasks, workspace files, or schema creation are unavailable in the
+target workspace, run the three orchestration scripts manually on compatible
+Databricks compute instead.
 
 ## Data-Quality Reporting
 
@@ -149,7 +232,7 @@ warning record counts and percentages for each dataset.
 
 Run each query separately in Databricks SQL and configure the recommended bar
 chart, histogram, and pie chart. See `src/dashboard/DASHBOARD_GUIDE.md` for
-field mappings and Community Edition setup steps.
+field mappings and Free Edition setup steps.
 
 ## Testing Approach
 
@@ -164,8 +247,13 @@ The project includes validation within the pipeline:
 - Intentional source issues provide known cases for validating each Silver
   quality category.
 
-A dedicated automated test suite and an end-to-end Databricks Community
-Edition test run are not currently documented.
+The repository contains pytest tests for generated row counts, required source
+defects, completeness, and uniqueness. During the latest local validation,
+five data-generation tests passed and two Spark-based tests could not start
+because the active Java 11 runtime was older than the installed PySpark
+runtime requires. No Silver assertion was reached. The Java/PySpark versions
+must be aligned before rerunning those tests. An end-to-end Databricks Free
+Edition run is not currently documented.
 
 ## AI-Assisted Development
 
@@ -187,6 +275,6 @@ being accepted.
 - `lifetime_value_actual` represents cumulative accepted order revenue.
 - Complex production retries and automatic schema evolution are out of scope.
 - Databricks workspace paths and dashboard availability must be confirmed in
-  the target Community Edition workspace.
+  the target Free Edition or personal workspace.
 - The pipeline has not been documented as tested end-to-end in Databricks
-  Community Edition.
+  Free Edition.

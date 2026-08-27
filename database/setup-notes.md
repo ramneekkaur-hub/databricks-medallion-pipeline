@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- A Databricks Community Edition workspace
+- A Databricks Free Edition or personal development workspace
 - A running cluster or other compute resource with PySpark and Delta Lake
 - Python 3 for the synthetic data generator
 - This repository imported into the Databricks workspace or otherwise
@@ -40,15 +40,10 @@ summary. See `database/seed-data-notes.md` for details.
 
 ## Make the CSV Files Available to Spark
 
-`src/bronze/ingest_bronze.py` uses the relative paths
-`data/customers.csv`, `data/products.csv`, and `data/orders.csv`. Run it with
-the repository root as the working directory when those paths are directly
-available to Spark.
-
-If the Community Edition workspace does not allow Spark to read repository
-files through relative paths, upload the three CSV files to a Spark-accessible
-workspace or DBFS location and update the `DATASETS` paths in
-`src/bronze/ingest_bronze.py` to those locations.
+`src/bronze/ingest_bronze.py` resolves `data/customers.csv`,
+`data/products.csv`, and `data/orders.csv` relative to the deployed script and
+passes fully qualified `file:/Workspace/...` paths to Spark. The Asset Bundle
+syncs these CSV files because Bronze requires them.
 
 ## Pipeline Execution Order
 
@@ -115,6 +110,6 @@ there.
 ## Validation Note
 
 These instructions describe the intended Databricks execution process. The
-pipeline has not been executed end-to-end in a Databricks Community Edition
+pipeline has not been executed end-to-end in a Databricks Free Edition
 workspace as part of this documentation task, so table creation, workspace
 paths, and dashboard availability must be confirmed in the target workspace.

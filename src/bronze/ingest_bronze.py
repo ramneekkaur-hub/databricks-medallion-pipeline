@@ -5,16 +5,18 @@ values remain available for validation in Silver.
 """
 
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Dict
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 
 
+DATA_DIRECTORY = Path(__file__).resolve().parents[2] / "data"
 DATASETS: Dict[str, str] = {
-    "customers": "data/customers.csv",
-    "products": "data/products.csv",
-    "orders": "data/orders.csv",
+    "customers": f"file:{DATA_DIRECTORY / 'customers.csv'}",
+    "products": f"file:{DATA_DIRECTORY / 'products.csv'}",
+    "orders": f"file:{DATA_DIRECTORY / 'orders.csv'}",
 }
 BRONZE_SCHEMA = "bronze"
 
@@ -33,7 +35,9 @@ def add_ingestion_metadata(source_df: DataFrame, batch_id: str) -> DataFrame:
     """Add audit metadata while leaving all source columns unchanged."""
     return (
         source_df.withColumn("ingestion_timestamp", F.current_timestamp())
-        .withColumn("source_file_name", F.input_file_name())
+        # _metadata.file_name works with Unity Catalog and serverless compute;
+        # input_file_name() is deprecated and unavailable on newer runtimes.
+        .withColumn("source_file_name", F.col("_metadata.file_name"))
         .withColumn("batch_id", F.lit(batch_id))
     )
 

@@ -94,7 +94,7 @@ Pie chart:
 No filter is required. Keep all four available segments visible so the chart
 represents the complete accepted customer population.
 
-## Creating the Dashboard in Databricks Community Edition
+## Creating the Dashboard in Databricks Free Edition
 
 1. Run the data generation, Bronze, Silver, and Gold steps in that order.
 2. Confirm that `gold.sales_by_product`, `gold.revenue_by_customer`, and

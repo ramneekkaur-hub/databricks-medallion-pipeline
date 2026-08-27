@@ -28,3 +28,6 @@ htmlcov/
 metastore_db/
 derby.log
 spark-warehouse/
+
+# Databricks Asset Bundle local state
+.databricks/
